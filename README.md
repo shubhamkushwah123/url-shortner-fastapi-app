@@ -16,9 +16,27 @@ A simple and fast URL shortener microservice built with FastAPI and SQLite.
 ### Prerequisites
 
 - Python 3.7+
+- Docker & Docker Compose v2
 - pip (Python package manager)
 
-### Installation
+### Option 1: Docker (Recommended)
+
+1. **Build and run with Docker Compose:**
+   ```bash
+   docker compose up --build
+   ```
+
+2. **Access the application:**
+   - **Web UI:** http://localhost:8000/static/
+   - **API Documentation:** http://localhost:8000/docs
+   - **Interactive API:** http://localhost:8000/redoc
+
+3. **Stop the container:**
+   ```bash
+   docker compose down
+   ```
+
+### Option 2: Local Development
 
 1. **Clone or navigate to the project directory:**
    ```bash
@@ -45,6 +63,33 @@ A simple and fast URL shortener microservice built with FastAPI and SQLite.
    - **Web UI:** http://localhost:8000/static/
    - **API Documentation:** http://localhost:8000/docs
    - **Interactive API:** http://localhost:8000/redoc
+
+## 🐳 Docker Deployment
+
+### Development
+```bash
+docker compose up --build
+```
+
+### Production (with nginx)
+```bash
+docker compose --profile production up --build
+```
+
+### Stop containers
+```bash
+docker compose down
+```
+
+### View logs
+```bash
+docker compose logs -f
+```
+
+### Rebuild without cache
+```bash
+docker compose build --no-cache
+```
 
 ## API Endpoints
 

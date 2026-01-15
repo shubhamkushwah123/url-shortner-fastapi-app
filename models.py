@@ -1,5 +1,11 @@
 import sqlite3
-DBNAME = 'database.db'
+import os
+
+# Use environment variable for database path, fallback to local
+DBNAME = os.environ.get('DB_PATH', 'database.db')
+
+# Ensure data directory exists for Docker
+os.makedirs(os.path.dirname(DBNAME) if os.path.dirname(DBNAME) else '.', exist_ok=True)
 
 def init_db():
     with sqlite3.connect(DBNAME) as conn:
