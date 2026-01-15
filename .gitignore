@@ -198,10 +198,14 @@ Thumbs.db
 *.swo
 *~
 
-# Test files
+# Test files (keep tests directory)
 test_api.py
 test_*.py
 *_test.py
+
+# Allow tests directory and its contents
+!tests/
+!tests/**/*.py
 
 # Coverage reports
 .coverage

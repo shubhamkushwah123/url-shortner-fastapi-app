@@ -25,6 +25,9 @@ def init_db():
 def insert_url(url, short_url):
     with sqlite3.connect(DBNAME) as conn:
         cursor = conn.cursor()
+        # Delete existing entry with same short code if it exists
+        cursor.execute("DELETE FROM URLS WHERE SHORT_URL = ?", (short_url,))
+        # Insert new entry
         query = """
         INSERT INTO URLS(URL, SHORT_URL) VALUES (?, ?)
         """

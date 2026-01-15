@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  url-shortener-test:
+    build: .
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DB_PATH=/app/data/test.db
+    volumes:
+      - .:/app
+      - test-data:/app/data
+    command: pytest tests/ -v --cov=models --cov=api --cov=main --cov-report=xml
+    depends_on:
+      - test-db
+
+  test-db:
+    image: sqlite:latest
+    volumes:
+      - test-data:/data
+
+volumes:
+  test-data:
