@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-4xl font-bold text-center mb-8 text-blue-400">URL Shortener</h1>
+        
+        <!-- URL Shortening Form -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Shorten URL</h2>
+            <div class="flex gap-2">
+                <input 
+                    type="url" 
+                    id="urlInput" 
+                    placeholder="Enter URL to shorten..." 
+                    class="flex-1 px-4 py-2 bg-gray-700 rounded border border-gray-600 focus:border-blue-400 focus:outline-none"
+                >
+                <button 
+                    onclick="shortenUrl()" 
+                    class="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium transition"
+                >
+                    Shorten
+                </button>
+            </div>
+            <div id="result" class="mt-4 hidden">
+                <p class="text-sm text-gray-400">Shortened URL:</p>
+                <div class="flex items-center gap-2 mt-1">
+                    <input 
+                        type="text" 
+                        id="shortUrlOutput" 
+                        readonly 
+                        class="flex-1 px-3 py-1 bg-gray-700 rounded text-sm"
+                    >
+                    <button 
+                        onclick="copyUrl()" 
+                        class="px-3 py-1 bg-gray-600 hover:bg-gray-500 rounded text-sm transition"
+                    >
+                        Copy
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- All URLs Section -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-8">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">All URLs</h2>
+                <button 
+                    onclick="loadUrls()" 
+                    class="px-4 py-1 bg-gray-600 hover:bg-gray-500 rounded text-sm transition"
+                >
+                    Refresh
+                </button>
+            </div>
+            <div id="urlsList" class="space-y-2">
+                <p class="text-gray-400">Loading URLs...</p>
+            </div>
+        </div>
+
+        <!-- URL Lookup -->
+        <div class="bg-gray-800 rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Get Original URL</h2>
+            <div class="flex gap-2">
+                <input 
+                    type="text" 
+                    id="shortCodeInput" 
+                    placeholder="Enter short code..." 
+                    class="flex-1 px-4 py-2 bg-gray-700 rounded border border-gray-600 focus:border-blue-400 focus:outline-none"
+                >
+                <button 
+                    onclick="getOriginalUrl()" 
+                    class="px-6 py-2 bg-green-600 hover:bg-green-700 rounded font-medium transition"
+                >
+                    Get URL
+                </button>
+            </div>
+            <div id="originalResult" class="mt-4 hidden">
+                <p class="text-sm text-gray-400">Original URL:</p>
+                <p id="originalUrlOutput" class="text-blue-400 mt-1"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 px-4 py-2 bg-green-600 text-white rounded hidden transition">
+        <span id="toastMessage"></span>
+    </div>
+
+    <script>
+        const API_BASE = '';
+
+        async function shortenUrl() {
+            const url = document.getElementById('urlInput').value.trim();
+            if (!url) {
+                showToast('Please enter a URL', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/shortenURL?url=${encodeURIComponent(url)}`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    const shortUrl = `${window.location.origin}/s/${result.short_code}`;
+                    
+                    document.getElementById('shortUrlOutput').value = shortUrl;
+                    document.getElementById('result').classList.remove('hidden');
+                    showToast('URL shortened successfully!');
+                    loadUrls(); // Refresh the URLs list
+                } else {
+                    showToast('Error shortening URL', 'error');
+                }
+            } catch (error) {
+                showToast('Network error', 'error');
+            }
+        }
+
+        async function loadUrls() {
+            try {
+                const response = await fetch(`${API_BASE}/getAllUrls`);
+                const urls = await response.json();
+                
+                const urlsList = document.getElementById('urlsList');
+                if (urls && urls.length > 0) {
+                    urlsList.innerHTML = urls.map(url => `
+                        <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                            <div class="flex-1">
+                                <p class="text-sm font-medium">/${url.short_url}</p>
+                                <p class="text-xs text-gray-400 truncate">${url.url}</p>
+                            </div>
+                            <button 
+                                onclick="deleteUrl('${url.short_url}')" 
+                                class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm transition"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    `).join('');
+                } else {
+                    urlsList.innerHTML = '<p class="text-gray-400">No URLs found</p>';
+                }
+            } catch (error) {
+                document.getElementById('urlsList').innerHTML = '<p class="text-red-400">Error loading URLs</p>';
+            }
+        }
+
+        async function getOriginalUrl() {
+            const shortCode = document.getElementById('shortCodeInput').value.trim();
+            if (!shortCode) {
+                showToast('Please enter a short code', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/s/${shortCode}`);
+                const result = await response.json();
+                
+                if (response.ok && result && result.length > 0) {
+                    // get_url returns a tuple: (url,)
+                    const originalUrl = result[0];
+                    document.getElementById('originalUrlOutput').textContent = originalUrl;
+                    document.getElementById('originalResult').classList.remove('hidden');
+                    showToast('URL retrieved successfully!');
+                } else {
+                    showToast('URL not found', 'error');
+                    document.getElementById('originalResult').classList.add('hidden');
+                }
+            } catch (error) {
+                showToast('Error retrieving URL', 'error');
+            }
+        }
+
+        async function deleteUrl(shortCode) {
+            try {
+                const response = await fetch(`${API_BASE}/deleteUrl/${shortCode}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    showToast('URL deleted successfully!');
+                    loadUrls(); // Refresh the URLs list
+                } else {
+                    showToast('Error deleting URL', 'error');
+                }
+            } catch (error) {
+                showToast('Network error', 'error');
+            }
+        }
+
+        function copyUrl() {
+            const input = document.getElementById('shortUrlOutput');
+            input.select();
+            document.execCommand('copy');
+            showToast('URL copied to clipboard!');
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastMessage.textContent = message;
+            toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded transition ${
+                type === 'error' ? 'bg-red-600' : 'bg-green-600'
+            } text-white`;
+            toast.classList.remove('hidden');
+            
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Load URLs on page load
+        loadUrls();
+
+        // Handle Enter key in URL input
+        document.getElementById('urlInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                shortenUrl();
+            }
+        });
+
+        // Handle Enter key in short code input
+        document.getElementById('shortCodeInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                getOriginalUrl();
+            }
+        });
+    </script>
+</body>
+</html>
